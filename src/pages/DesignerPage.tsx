@@ -10,6 +10,7 @@ import {
   useHotkeys,
 } from '@/domains/model-designer';
 import { CodePreviewContainer } from '@/domains/preview-pane';
+import { useAutoSave } from '@/shared/hooks';
 
 function DesignerContent() {
   // Enable hotkeys
@@ -58,12 +59,23 @@ export function DesignerPage() {
   
   const getWorkspaceById = useWorkspaceStore((state) => state.getWorkspaceById);
   const setActiveWorkspace = useWorkspaceStore((state) => state.setActiveWorkspace);
+  
   const createNewModel = useModelStore((state) => state.createNewModel);
   const setModel = useModelStore((state) => state.setModel);
+  const isDirty = useModelStore((state) => state.isDirty);
+  
   const addEvent = useActivityStore((state) => state.addEvent);
   
   const [isInitialized, setIsInitialized] = useState(false);
   
+  // Auto-save on every model change (throttled to 500ms to prevent API spam during drags)
+  useAutoSave({
+    workspaceId: workspaceId ?? '',
+    throttleMs: 500,
+    enabled: isInitialized && !!workspaceId,
+  });
+  
+  // Initialize workspace and model
   useEffect(() => {
     if (!workspaceId) {
       navigate('/');
@@ -82,9 +94,9 @@ export function DesignerPage() {
     
     // Load or create model
     if (workspace.activeModelId) {
-      const model = workspace.models.find((m) => m.id === workspace.activeModelId);
-      if (model) {
-        setModel(model);
+      const existingModel = workspace.models.find((m) => m.id === workspace.activeModelId);
+      if (existingModel) {
+        setModel(existingModel);
       } else {
         createNewModel(`${workspace.name} Model`);
       }
@@ -96,6 +108,19 @@ export function DesignerPage() {
     
     setIsInitialized(true);
   }, [workspaceId, getWorkspaceById, setActiveWorkspace, createNewModel, setModel, addEvent, navigate]);
+  
+  // Save before unload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
   
   if (!isInitialized) {
     return (

@@ -5,22 +5,31 @@ import { useShallow } from 'zustand/shallow';
 import { v4 as uuidv4 } from 'uuid';
 import type { Workspace, DataModel } from '@/shared/schemas';
 
+// Extended workspace type with backend linking
+export interface WorkspaceWithBackend extends Workspace {
+  backendProjectId?: string;
+  backendSchemaId?: string; // ID of the active schema in backend
+}
+
 interface WorkspaceState {
   // Workspace data
-  workspaces: Workspace[];
+  workspaces: WorkspaceWithBackend[];
   activeWorkspaceId: string | null;
   
   // UI State
   isLoading: boolean;
   
   // Workspace actions
-  createWorkspace: (name: string) => string;
-  updateWorkspace: (workspaceId: string, updates: Partial<Omit<Workspace, 'id' | 'models'>>) => void;
+  createWorkspace: (name: string, backendProjectId?: string) => string;
+  updateWorkspace: (workspaceId: string, updates: Partial<Omit<WorkspaceWithBackend, 'id' | 'models'>>) => void;
   deleteWorkspace: (workspaceId: string) => void;
   setActiveWorkspace: (workspaceId: string | null) => void;
+  setWorkspaces: (workspaces: WorkspaceWithBackend[]) => void;
+  setLoading: (isLoading: boolean) => void;
   
   // Model within workspace actions
   addModelToWorkspace: (workspaceId: string, model: DataModel) => void;
+  updateModelInWorkspace: (workspaceId: string, modelId: string, model: DataModel) => void;
   removeModelFromWorkspace: (workspaceId: string, modelId: string) => void;
   setActiveModel: (workspaceId: string, modelId: string | null) => void;
   
@@ -30,8 +39,8 @@ interface WorkspaceState {
   importModel: (workspaceId: string, model: DataModel) => void;
   
   // Getters
-  getActiveWorkspace: () => Workspace | null;
-  getWorkspaceById: (workspaceId: string) => Workspace | undefined;
+  getActiveWorkspace: () => WorkspaceWithBackend | null;
+  getWorkspaceById: (workspaceId: string) => WorkspaceWithBackend | undefined;
 }
 
 export const useWorkspaceStore = create<WorkspaceState>()(
@@ -41,17 +50,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       activeWorkspaceId: null,
       isLoading: false,
       
-      createWorkspace: (name) => {
-        const workspaceId = uuidv4();
+      createWorkspace: (name, backendProjectId) => {
+        const workspaceId = backendProjectId ?? uuidv4();
         const now = new Date().toISOString();
         
         set((state) => {
-          const newWorkspace: Workspace = {
+          const newWorkspace: WorkspaceWithBackend = {
             id: workspaceId,
             name,
             models: [],
             createdAt: now,
             updatedAt: now,
+            backendProjectId,
           };
           state.workspaces.push(newWorkspace);
           state.activeWorkspaceId = workspaceId;
@@ -82,12 +92,34 @@ export const useWorkspaceStore = create<WorkspaceState>()(
           state.activeWorkspaceId = workspaceId;
         }),
       
+      setWorkspaces: (workspaces) =>
+        set((state) => {
+          state.workspaces = workspaces;
+        }),
+      
+      setLoading: (isLoading) =>
+        set((state) => {
+          state.isLoading = isLoading;
+        }),
+      
       addModelToWorkspace: (workspaceId, model) =>
         set((state) => {
           const workspace = state.workspaces.find((w) => w.id === workspaceId);
           if (workspace) {
             workspace.models.push(model);
             workspace.activeModelId = model.id;
+            workspace.updatedAt = new Date().toISOString();
+          }
+        }),
+      
+      updateModelInWorkspace: (workspaceId, modelId, model) =>
+        set((state) => {
+          const workspace = state.workspaces.find((w) => w.id === workspaceId);
+          if (workspace) {
+            const index = workspace.models.findIndex((m) => m.id === modelId);
+            if (index !== -1) {
+              workspace.models[index] = model;
+            }
             workspace.updatedAt = new Date().toISOString();
           }
         }),

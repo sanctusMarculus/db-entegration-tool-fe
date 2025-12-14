@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useWorkspaceStore } from '@/shared/stores';
 import { useWorkspaceActions } from '../../hooks';
 import { formatWorkspaceForList } from '../../utils';
@@ -8,6 +9,7 @@ interface WorkspaceCardContainerProps {
 }
 
 export function WorkspaceCardContainer({ workspaceId }: WorkspaceCardContainerProps) {
+  const navigate = useNavigate();
   const workspace = useWorkspaceStore((state) =>
     state.workspaces.find((w) => w.id === workspaceId)
   );
@@ -20,11 +22,16 @@ export function WorkspaceCardContainer({ workspaceId }: WorkspaceCardContainerPr
   
   const workspaceItem = formatWorkspaceForList(workspace);
   
+  const handleOpenWorkspace = () => {
+    handleSelectWorkspace(workspaceId);
+    navigate(`/designer/${workspaceId}`);
+  };
+  
   return (
     <WorkspaceCardView
       workspace={workspaceItem}
       isActive={activeWorkspaceId === workspaceId}
-      onSelect={() => handleSelectWorkspace(workspaceId)}
+      onSelect={handleOpenWorkspace}
       onDelete={() => handleDeleteWorkspace(workspaceId, workspace.name)}
       onExport={() => handleExportWorkspace(workspaceId)}
     />

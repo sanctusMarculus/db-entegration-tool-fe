@@ -14,8 +14,8 @@ export function CreateWorkspaceDialogContainer({
 }: CreateWorkspaceDialogContainerProps) {
   const { handleCreateWorkspace } = useWorkspaceActions();
   
-  const handleSubmit = (data: { name: string }) => {
-    const workspaceId = handleCreateWorkspace(data.name);
+  const handleSubmit = async (data: { name: string }) => {
+    const workspaceId = await handleCreateWorkspace(data.name);
     onCreated?.(workspaceId);
   };
   
