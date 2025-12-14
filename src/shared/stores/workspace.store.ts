@@ -146,12 +146,18 @@ export const useWorkspaceStore = create<WorkspaceState>()(
       
       importWorkspace: (data) =>
         set((state) => {
-          // Assign new ID to avoid conflicts
-          const importedWorkspace: Workspace = {
-            ...data,
+          // Cast to WorkspaceWithBackend to access optional backend fields
+          const inputData = data as WorkspaceWithBackend;
+          
+          // Assign new ID to avoid conflicts, but preserve backend IDs if provided
+          const importedWorkspace: WorkspaceWithBackend = {
+            ...inputData,
             id: uuidv4(),
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
+            // Preserve backend links if they exist
+            backendProjectId: inputData.backendProjectId,
+            backendSchemaId: inputData.backendSchemaId,
           };
           state.workspaces.push(importedWorkspace);
           state.activeWorkspaceId = importedWorkspace.id;

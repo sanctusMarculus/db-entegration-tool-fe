@@ -1,7 +1,8 @@
 import { useCallback } from 'react';
 import { useWorkspaceStore, useActivityStore } from '@/shared/stores';
-import { useApiClient } from '@/shared/api';
-import { downloadWorkspaceAsJson, parseImportedWorkspace } from '../utils';
+import { useApiClient, dataModelToBackendSchema } from '@/shared/api';
+import { downloadWorkspaceAsJson, parseImportedFile, modelToWorkspace } from '../utils';
+import type { DataModel } from '@/shared/schemas';
 
 interface CreateWorkspaceOptions {
   description?: string;
@@ -81,34 +82,84 @@ export function useWorkspaceActions() {
     [exportWorkspace, addEvent]
   );
   
+  /**
+   * Import a model to the backend and create schema
+   */
+  const importModelToBackend = useCallback(
+    async (projectId: string, model: DataModel): Promise<string | null> => {
+      try {
+        const { schemaJson, uiMetadata } = dataModelToBackendSchema(model);
+        const schema = await api.schemas.create(projectId, {
+          name: model.name,
+          schemaJson,
+          uiMetadata,
+        });
+        return schema.id;
+      } catch (error) {
+        console.error('Failed to create schema on backend:', error);
+        return null;
+      }
+    },
+    [api]
+  );
+
   const handleImportWorkspace = useCallback(
     async (file: File) => {
       const reader = new FileReader();
+      
       reader.onload = async (e) => {
         const content = e.target?.result as string;
-        const workspace = parseImportedWorkspace(content);
-        if (workspace) {
-          // Create on backend
-          try {
-            const project = await api.projects.create({ name: workspace.name });
-            // Import locally with backend ID
-            importWorkspace({ ...workspace, backendProjectId: project.id } as typeof workspace);
-            addEvent('success', `Imported workspace "${workspace.name}"`);
-          } catch {
-            // Fallback to local-only import
-            importWorkspace(workspace);
-            addEvent('warning', `Imported workspace "${workspace.name}" (offline mode)`);
+        const result = parseImportedFile(content);
+        
+        if (result.type === 'error') {
+          addEvent('error', `Import failed: ${result.message}`);
+          return;
+        }
+        
+        // Convert model to workspace if needed
+        const workspace = result.type === 'model' 
+          ? modelToWorkspace(result.data)
+          : result.data;
+        
+        try {
+          // Create project on backend
+          const project = await api.projects.create({ 
+            name: workspace.name,
+            description: `Imported from ${file.name}`,
+          });
+          
+          // Create schemas for each model in the workspace
+          let schemaId: string | null = null;
+          for (const model of workspace.models) {
+            const createdSchemaId = await importModelToBackend(project.id, model);
+            if (!schemaId && createdSchemaId) {
+              schemaId = createdSchemaId; // Store first schema ID as active
+            }
           }
-        } else {
-          addEvent('error', 'Failed to import workspace: Invalid format');
+          
+          // Import locally with backend IDs
+          importWorkspace({
+            ...workspace,
+            backendProjectId: project.id,
+            backendSchemaId: schemaId ?? undefined,
+          } as typeof workspace);
+          
+          addEvent('success', `Imported "${workspace.name}" with ${workspace.models.length} model(s)`);
+        } catch (error) {
+          console.error('Backend import failed:', error);
+          // Fallback to local-only import
+          importWorkspace(workspace);
+          addEvent('warning', `Imported "${workspace.name}" locally (server sync failed)`);
         }
       };
+      
       reader.onerror = () => {
-        addEvent('error', 'Failed to read workspace file');
+        addEvent('error', 'Failed to read file');
       };
+      
       reader.readAsText(file);
     },
-    [importWorkspace, addEvent, api]
+    [importWorkspace, addEvent, api, importModelToBackend]
   );
   
   const handleSelectWorkspace = useCallback(
