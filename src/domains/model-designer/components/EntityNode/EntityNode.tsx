@@ -26,7 +26,10 @@ function FieldRow({
   return (
     <div
       className="group flex items-center gap-2 px-3 py-1.5 hover:bg-secondary/50 cursor-pointer text-sm"
-      onClick={onSelect}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
     >
       {/* Field type icon */}
       <span className="text-xs font-mono text-muted-foreground w-6">

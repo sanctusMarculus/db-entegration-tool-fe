@@ -10,8 +10,7 @@ export function EntityNodeContainer({ data, selected }: EntityNodeProps) {
   const {
     handleAddField,
     handleDeleteField,
-    handleSelectEntity,
-    handleSelectField,
+    handleSelectEntityAndField,
   } = useCanvasActions();
   
   const handleAddFieldClick = useCallback(() => {
@@ -20,10 +19,10 @@ export function EntityNodeContainer({ data, selected }: EntityNodeProps) {
   
   const handleFieldSelect = useCallback(
     (fieldId: string) => {
-      handleSelectEntity(data.entity.id);
-      handleSelectField(fieldId);
+      // Use combined action to select both entity and field atomically
+      handleSelectEntityAndField(data.entity.id, fieldId);
     },
-    [data.entity.id, handleSelectEntity, handleSelectField]
+    [data.entity.id, handleSelectEntityAndField]
   );
   
   const handleFieldDelete = useCallback(

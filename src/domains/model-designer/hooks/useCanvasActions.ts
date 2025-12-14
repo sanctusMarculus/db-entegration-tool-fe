@@ -17,6 +17,7 @@ export function useCanvasActions() {
     deleteRelation,
     selectEntity,
     selectField,
+    selectEntityAndField,
     selectRelation,
     clearSelection,
     updateEntityPosition,
@@ -135,6 +136,13 @@ export function useCanvasActions() {
     [selectField]
   );
   
+  const handleSelectEntityAndField = useCallback(
+    (entityId: string, fieldId: string) => {
+      selectEntityAndField(entityId, fieldId);
+    },
+    [selectEntityAndField]
+  );
+  
   const handleSelectRelation = useCallback(
     (relationId: string | null) => {
       selectRelation(relationId);
@@ -166,6 +174,7 @@ export function useCanvasActions() {
     handleNodeDragStop,
     handleSelectEntity,
     handleSelectField,
+    handleSelectEntityAndField,
     handleSelectRelation,
     handleClearSelection,
     

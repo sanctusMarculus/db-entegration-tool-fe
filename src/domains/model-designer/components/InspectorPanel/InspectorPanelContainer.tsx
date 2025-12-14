@@ -38,10 +38,15 @@ export function InspectorPanelContainer() {
   const handleFieldUpdate = useCallback(
     (updates: { name?: string; type?: string }) => {
       if (selectedEntityId && selectedFieldId) {
-        handleUpdateField(selectedEntityId, selectedFieldId, {
-          ...updates,
-          type: updates.type as FieldType,
-        });
+        // Only include defined properties to avoid overwriting with undefined
+        const fieldUpdates: Partial<{ name: string; type: FieldType }> = {};
+        if (updates.name !== undefined) {
+          fieldUpdates.name = updates.name;
+        }
+        if (updates.type !== undefined) {
+          fieldUpdates.type = updates.type as FieldType;
+        }
+        handleUpdateField(selectedEntityId, selectedFieldId, fieldUpdates);
       }
     },
     [selectedEntityId, selectedFieldId, handleUpdateField]
