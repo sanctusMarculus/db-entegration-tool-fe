@@ -55,3 +55,9 @@ export { Badge, badgeVariants } from './Badge';
 export type { BadgeProps } from './Badge';
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent } from './Card';
+
+export { Textarea } from './Textarea';
+export type { TextareaProps } from './Textarea';
+
+export { Skeleton } from './Skeleton';
+export type { SkeletonProps } from './Skeleton';

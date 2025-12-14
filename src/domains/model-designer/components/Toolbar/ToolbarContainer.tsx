@@ -1,13 +1,25 @@
-import { useCallback } from 'react';
-import { useModelStore, useActivityStore } from '@/shared/stores';
+import { useCallback, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useModelStore, useWorkspaceStore, useActivityStore } from '@/shared/stores';
+import { useApiClient, dataModelToBackendSchema } from '@/shared/api';
 import { useCanvasActions } from '../../hooks';
 import { ToolbarView } from './Toolbar';
 
 export function ToolbarContainer() {
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const api = useApiClient();
+  
   const model = useModelStore((state) => state.model);
   const isDirty = useModelStore((state) => state.isDirty);
   const markClean = useModelStore((state) => state.markClean);
+  
+  const getWorkspaceById = useWorkspaceStore((state) => state.getWorkspaceById);
+  const updateWorkspace = useWorkspaceStore((state) => state.updateWorkspace);
+  const updateModelInWorkspace = useWorkspaceStore((state) => state.updateModelInWorkspace);
+  
   const addEvent = useActivityStore((state) => state.addEvent);
+  
+  const [isSaving, setIsSaving] = useState(false);
   
   const { handleAddEntity } = useCanvasActions();
   
@@ -16,11 +28,56 @@ export function ToolbarContainer() {
     handleAddEntity(position);
   }, [handleAddEntity]);
   
-  const handleSave = useCallback(() => {
-    // In a real app, this would persist to a backend
-    markClean();
-    addEvent('success', 'Model saved successfully');
-  }, [markClean, addEvent]);
+  const handleSave = useCallback(async () => {
+    if (!model || !workspaceId || isSaving) return;
+    
+    const workspace = getWorkspaceById(workspaceId);
+    if (!workspace?.backendProjectId) {
+      // No backend link, just save locally
+      updateModelInWorkspace(workspaceId, model.id, model);
+      markClean();
+      addEvent('success', 'Model saved locally');
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      const { schemaJson, uiMetadata } = dataModelToBackendSchema(model);
+      
+      if (workspace.backendSchemaId) {
+        // Update existing schema
+        await api.schemas.update(workspace.backendSchemaId, {
+          name: model.name,
+          schemaJson,
+          uiMetadata,
+          changelog: `Manual save at ${new Date().toISOString()}`,
+        });
+      } else {
+        // Create new schema
+        const schema = await api.schemas.create(workspace.backendProjectId, {
+          name: model.name,
+          schemaJson,
+          uiMetadata,
+        });
+        // Store the schema ID
+        updateWorkspace(workspaceId, { backendSchemaId: schema.id });
+      }
+      
+      // Also update local model
+      updateModelInWorkspace(workspaceId, model.id, model);
+      markClean();
+      addEvent('success', 'Model saved successfully');
+    } catch (error) {
+      console.error('Save failed:', error);
+      addEvent('error', 'Failed to save model');
+      // Still save locally
+      updateModelInWorkspace(workspaceId, model.id, model);
+      markClean();
+    } finally {
+      setIsSaving(false);
+    }
+  }, [model, workspaceId, isSaving, getWorkspaceById, api, updateWorkspace, updateModelInWorkspace, markClean, addEvent]);
   
   const handleExport = useCallback(() => {
     if (!model) return;
@@ -45,6 +102,7 @@ export function ToolbarContainer() {
     <ToolbarView
       modelName={model.name}
       isDirty={isDirty}
+      isSaving={isSaving}
       entitiesCount={model.entities.length}
       relationsCount={model.relations.length}
       onAddEntity={handleAddEntityClick}

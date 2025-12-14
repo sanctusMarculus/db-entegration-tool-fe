@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/clerk-react';
-import { Database, LayoutDashboard } from 'lucide-react';
+import { Database, LayoutDashboard, BarChart3 } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { Button } from '@/shared/ui';
 
 const NAV_ITEMS = [
   { path: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
 export function Sidebar() {

@@ -1,5 +1,5 @@
 import { useWorkspaceActions } from '../../hooks';
-import { CreateWorkspaceDialogView } from './CreateWorkspaceDialog';
+import { CreateWorkspaceDialogView, type CreateWorkspaceFormData } from './CreateWorkspaceDialog';
 
 interface CreateWorkspaceDialogContainerProps {
   isOpen: boolean;
@@ -14,8 +14,12 @@ export function CreateWorkspaceDialogContainer({
 }: CreateWorkspaceDialogContainerProps) {
   const { handleCreateWorkspace } = useWorkspaceActions();
   
-  const handleSubmit = async (data: { name: string }) => {
-    const workspaceId = await handleCreateWorkspace(data.name);
+  const handleSubmit = async (data: CreateWorkspaceFormData) => {
+    const workspaceId = await handleCreateWorkspace(data.name, {
+      description: data.description,
+      databaseType: data.databaseType,
+      color: data.color,
+    });
     onCreated?.(workspaceId);
   };
   

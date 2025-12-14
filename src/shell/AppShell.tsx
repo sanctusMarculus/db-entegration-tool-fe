@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/shared/ui';
 import { Layout } from '@/components';
-import { DashboardPage, DesignerPage } from '@/pages';
+import { DashboardPage, DesignerPage, AnalyticsPage } from '@/pages';
 import { useDataSync } from '@/shared/api';
 import { useUserSession } from '@/shared/hooks';
 
@@ -78,6 +78,7 @@ export function AppShell() {
               <Routes>
                 <Route path="/" element={<Layout />}>
                   <Route index element={<DashboardPage />} />
+                  <Route path="analytics" element={<AnalyticsPage />} />
                   <Route path="designer/:workspaceId" element={<DesignerPage />} />
                 </Route>
               </Routes>

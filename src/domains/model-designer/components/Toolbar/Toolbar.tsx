@@ -1,9 +1,10 @@
-import { Plus, Download, Save } from 'lucide-react';
+import { Plus, Download, Save, Loader2 } from 'lucide-react';
 import { Button, Badge } from '@/shared/ui';
 
 interface ToolbarViewProps {
   modelName: string;
   isDirty: boolean;
+  isSaving?: boolean;
   entitiesCount: number;
   relationsCount: number;
   onAddEntity: () => void;
@@ -14,6 +15,7 @@ interface ToolbarViewProps {
 export function ToolbarView({
   modelName,
   isDirty,
+  isSaving = false,
   entitiesCount,
   relationsCount,
   onAddEntity,
@@ -26,9 +28,15 @@ export function ToolbarView({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <h2 className="font-semibold">{modelName}</h2>
-          {isDirty && (
+          {isDirty && !isSaving && (
             <Badge variant="secondary" className="text-xs">
               Unsaved
+            </Badge>
+          )}
+          {isSaving && (
+            <Badge variant="outline" className="text-xs">
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Saving...
             </Badge>
           )}
         </div>
@@ -50,9 +58,13 @@ export function ToolbarView({
       
       {/* Right section */}
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" onClick={onSave}>
-          <Save className="h-4 w-4 mr-1" />
-          Save
+        <Button variant="outline" size="sm" onClick={onSave} disabled={isSaving}>
+          {isSaving ? (
+            <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-1" />
+          )}
+          {isSaving ? 'Saving...' : 'Save'}
         </Button>
         <Button variant="outline" size="sm" onClick={onExport}>
           <Download className="h-4 w-4 mr-1" />

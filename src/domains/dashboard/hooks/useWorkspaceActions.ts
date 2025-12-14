@@ -3,6 +3,12 @@ import { useWorkspaceStore, useActivityStore } from '@/shared/stores';
 import { useApiClient } from '@/shared/api';
 import { downloadWorkspaceAsJson, parseImportedWorkspace } from '../utils';
 
+interface CreateWorkspaceOptions {
+  description?: string;
+  databaseType?: string;
+  color?: string;
+}
+
 export function useWorkspaceActions() {
   const {
     createWorkspace,
@@ -17,21 +23,26 @@ export function useWorkspaceActions() {
   const api = useApiClient();
   
   const handleCreateWorkspace = useCallback(
-    async (name: string) => {
+    async (name: string, options?: CreateWorkspaceOptions) => {
       try {
         // Create on backend first to get the ID
-        const project = await api.projects.create({ name });
+        const project = await api.projects.create({
+          name,
+          description: options?.description,
+          databaseType: options?.databaseType as 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' | 'other' | undefined,
+          color: options?.color as 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange' | 'pink' | 'gray' | undefined,
+        });
         
         // Create locally with backend ID
         const id = createWorkspace(name, project.id);
-        addEvent('success', `Created workspace "${name}"`);
+        addEvent('success', `Created project "${name}"`);
         
         return id;
       } catch (error) {
         // Fallback to local-only creation
-        console.warn('Failed to create workspace on backend:', error);
+        console.warn('Failed to create project on backend:', error);
         const id = createWorkspace(name);
-        addEvent('warning', `Created workspace "${name}" (offline mode)`);
+        addEvent('warning', `Created project "${name}" (offline mode)`);
         return id;
       }
     },

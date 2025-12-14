@@ -60,9 +60,20 @@ export interface Project {
   ownerId: string;
   name: string;
   description: string | null;
+  status: ProjectStatus;
+  color: ProjectColor;
+  databaseType: DatabaseType;
+  tags: string[];
+  isFavorite: boolean;
+  lastAccessedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
+
+// Project enums
+export type ProjectStatus = 'active' | 'archived' | 'draft';
+export type ProjectColor = 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'orange' | 'pink' | 'gray';
+export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'sqlserver' | 'mongodb' | 'other';
 
 export interface Schema {
   id: string;
@@ -89,11 +100,19 @@ export interface SchemaVersion {
 export interface CreateProjectInput {
   name: string;
   description?: string;
+  databaseType?: DatabaseType;
+  color?: ProjectColor;
+  tags?: string[];
 }
 
 export interface UpdateProjectInput {
   name?: string;
   description?: string;
+  databaseType?: DatabaseType;
+  color?: ProjectColor;
+  tags?: string[];
+  status?: ProjectStatus;
+  isFavorite?: boolean;
 }
 
 export interface CreateSchemaInput {
@@ -130,6 +149,54 @@ export interface HealthStatus {
   timestamp: string;
   uptime: number;
   checks?: Record<string, { status: string; latency?: number; error?: string }>;
+}
+
+// Stats types
+export interface ActivityItem {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  resourceName?: string;
+  createdAt: string;
+}
+
+export interface StatusCount {
+  status: string;
+  count: number;
+}
+
+export interface DatabaseTypeCount {
+  databaseType: string;
+  count: number;
+}
+
+export interface SchemaPerProject {
+  projectId: string;
+  projectName: string;
+  schemaCount: number;
+}
+
+export interface UserStats {
+  totalProjects: number;
+  totalSchemas: number;
+  totalEntities: number;
+  totalRelationships: number;
+  activeProjects: number;
+  archivedProjects: number;
+  favoriteProjects: number;
+  recentActivity: ActivityItem[];
+  projectsByStatus: StatusCount[];
+  projectsByDatabaseType: DatabaseTypeCount[];
+  schemasPerProject: SchemaPerProject[];
+  entitiesOverTime: { date: string; count: number }[];
+}
+
+export interface StatsSummary {
+  totalProjects: number;
+  totalSchemas: number;
+  totalEntities: number;
+  activeProjects: number;
 }
 
 // ============================================================================
@@ -270,6 +337,14 @@ export function createApiClient(config: ApiClientConfig) {
       
       restore: (schemaId: string, version: number) => 
         request<Schema>('POST', `/schemas/${schemaId}/versions/${version}/restore`),
+    },
+
+    // ========================================================================
+    // Stats & Analytics
+    // ========================================================================
+    stats: {
+      get: () => request<UserStats>('GET', '/stats'),
+      summary: () => request<StatsSummary>('GET', '/stats/summary'),
     },
   };
 }

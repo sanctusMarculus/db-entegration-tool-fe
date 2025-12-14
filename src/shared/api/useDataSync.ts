@@ -80,6 +80,8 @@ export function useDataSync(): UseDataSyncReturn {
         createdAt: sw.createdAt,
         updatedAt: sw.updatedAt,
         backendProjectId: sw.backendProjectId,
+        // Set backendSchemaId to the active model ID (model ID = schema ID after sync)
+        backendSchemaId: sw.activeModelId,
       }));
       
       setWorkspaces(mergedWorkspaces);

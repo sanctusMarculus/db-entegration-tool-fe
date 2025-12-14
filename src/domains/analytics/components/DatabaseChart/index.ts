@@ -1,0 +1,1 @@
+export { DatabaseChart } from './DatabaseChart';
