@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { UserButton, useClerk } from '@clerk/clerk-react';
-import { Database, LayoutDashboard, LogOut } from 'lucide-react';
+import { UserButton } from '@clerk/clerk-react';
+import { Database, LayoutDashboard } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { Button } from '@/shared/ui';
 
@@ -10,7 +10,6 @@ const NAV_ITEMS = [
 
 export function Sidebar() {
   const location = useLocation();
-  const { signOut } = useClerk();
   
   return (
     <aside className="w-16 bg-card border-r border-border flex flex-col items-center py-4">
@@ -42,8 +41,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* User Profile and Logout */}
-      <div className="mt-auto pt-4 flex flex-col items-center gap-3">
+      {/* User Profile - Clerk UserButton */}
+      <div className="mt-auto pt-4">
         <UserButton
           appearance={{
             elements: {
@@ -51,17 +50,6 @@ export function Sidebar() {
             },
           }}
         />
-        
-        {/* Logout Button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="w-10 h-10 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-          onClick={() => signOut()}
-          title="Sign out"
-        >
-          <LogOut className="h-5 w-5" />
-        </Button>
       </div>
     </aside>
   );
